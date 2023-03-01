@@ -1,8 +1,10 @@
 import numpy as np
 import warnings
 
+warnings.filterwarnings('ignore')
 class SimpleLR:
-    def __init__(self, alpha=0.01, n_iter=50, random_state = None):
+    def __init__(self, alpha=0.01, n_iter=50, random_state = None,clip=5):
+        self.clip = clip
         self.alpha = alpha
         self.n_iter = n_iter
         self.m = None
@@ -32,11 +34,11 @@ class SimpleLR:
     def update_weights(self):
         dl_dm = -2*(self.X.T.dot(self.y-self.predict(self.X)))/self.y.shape[0]
         # dl_dm = (dl_dm-dl_dm.min())/(dl_dm.max()-dl_dm.min())
-        # dl_dm = np.where(dl_dm>self.clip,self.clip,dl_dm)
-        # dl_dm = np.where(dl_dm<-self.clip,-self.clip,dl_dm)
+        dl_dm = np.where(dl_dm>self.clip,self.clip,dl_dm)
+        dl_dm = np.where(dl_dm<-self.clip,-self.clip,dl_dm)
         dl_db = -2*((self.y-self.predict(self.X)).sum())/self.y.shape[0]
-        # dl_db = np.where(dl_db>self.clip,self.clip,dl_db)
-        # dl_db = np.where(dl_db<-self.clip,-self.clip,dl_db)
+        dl_db = np.where(dl_db>self.clip,self.clip,dl_db)
+        dl_db = np.where(dl_db<-self.clip,-self.clip,dl_db)
         
         self.m = self.m - (dl_dm*self.alpha)
         self.b = self.b - (dl_db*self.alpha)
