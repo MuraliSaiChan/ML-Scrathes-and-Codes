@@ -7,21 +7,22 @@ class SimpleLR:
         self.n_iter = n_iter
         self.m = None
         self.b = None
+        self.b_track = []
+        self.loss_track = []
         self.X = None
         self.y = None
         self.y_pred = None
         if random_state is not None:
             np.random.seed(random_state)
-            
-        
+                
     def loss(self):
-        return np.square(self.y-self.y_pred).sum()/self.y.shape[0]
+        return np.sqrt(np.square(self.y-self.y_pred).sum()/self.y.shape[0])
     
     def coef_(self):
         return self.m, self.b 
     
     def score(self,X,y):
-        y_pred = (self.m*X+self.b).sum(axis=1).reshape(-1,1)
+        y_pred = self.predict(X)
         ssr = np.square(y-y_pred).sum()
         y_pred = y.mean()
         sst =  np.square(y-y_pred).sum()
@@ -29,12 +30,13 @@ class SimpleLR:
         
     
     def update_weights(self):
-        dl_dm = -((self.X*(self.y-self.m*self.X-self.b)).sum(axis=0))/self.y.shape[0]
-        dl_dm = np.where(dl_dm>50,50,dl_dm)
-        dl_dm = np.where(dl_dm<-50,-50,dl_dm)
-        dl_db = -((self.y-self.m*self.X-self.b).sum())/self.y.shape[0]
-        dl_db = np.where(dl_db>50,50,dl_db)
-        dl_db = np.where(dl_db<-50,-50,dl_db)
+        dl_dm = -2*(self.X.T.dot(self.y-self.predict(self.X)))/self.y.shape[0]
+        # dl_dm = (dl_dm-dl_dm.min())/(dl_dm.max()-dl_dm.min())
+        # dl_dm = np.where(dl_dm>self.clip,self.clip,dl_dm)
+        # dl_dm = np.where(dl_dm<-self.clip,-self.clip,dl_dm)
+        dl_db = -2*((self.y-self.predict(self.X)).sum())/self.y.shape[0]
+        # dl_db = np.where(dl_db>self.clip,self.clip,dl_db)
+        # dl_db = np.where(dl_db<-self.clip,-self.clip,dl_db)
         
         self.m = self.m - (dl_dm*self.alpha)
         self.b = self.b - (dl_db*self.alpha)
@@ -42,12 +44,16 @@ class SimpleLR:
     def fit(self,X,y,verbose = True):
         self.X = X
         self.y = y
-        self.m = np.random.randn(X.shape[1]).reshape(1,-1)*np.sqrt(2/self.y.shape[0])
-        self.b = np.random.randn(1)*np.sqrt(2/self.y.shape[0])
-        self.y_pred = (self.m*self.X+self.b).sum(axis=1).reshape(-1,1)
+        self.m = np.random.randn(X.shape[1])
+        self.b = np.random.randn(1)
+        self.b_track.append(self.b)
+        self.y_pred = self.predict(self.X) #(self.m*self.X+self.b).sum(axis=1).reshape(-1,1)
+        self.loss_track.append(self.loss())
         for i in range(self.n_iter):
             self.update_weights()
-            self.y_pred = (self.m*self.X+self.b).sum(axis=1).reshape(-1,1)
+            self.b_track.append(self.b)
+            self.y_pred = self.predict(self.X)#(self.m*self.X+self.b).sum(axis=1).reshape(-1,1)
+            self.loss_track.append(self.loss())
             if verbose:
                 print("Cycle {0}: m:".format({i+1}),self.m,"b:",self.b,"loss:",self.loss())
         # print(self.y)
@@ -57,7 +63,7 @@ class SimpleLR:
         # print(y)
         
     def predict(self, X):
-        return (self.m*X+self.b).sum(axis=1).reshape(-1,1)
+        return X.dot(self.m)+self.b#(self.m*X+self.b).sum(axis=1).reshape(-1,1)
     
 # warnings.filterwarnings('ignore')    
 
