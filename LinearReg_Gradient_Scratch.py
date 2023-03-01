@@ -9,6 +9,7 @@ class SimpleLR:
         self.n_iter = n_iter
         self.m = None
         self.b = None
+        self.m_track = []
         self.b_track = []
         self.loss_track = []
         self.X = None
@@ -48,11 +49,13 @@ class SimpleLR:
         self.y = y
         self.m = np.random.randn(X.shape[1])
         self.b = np.random.randn(1)
+        self.m_track.append(self.m[0])
         self.b_track.append(self.b)
         self.y_pred = self.predict(self.X) #(self.m*self.X+self.b).sum(axis=1).reshape(-1,1)
         self.loss_track.append(self.loss())
         for i in range(self.n_iter):
             self.update_weights()
+            self.m_track.append(self.m[0])
             self.b_track.append(self.b)
             self.y_pred = self.predict(self.X)#(self.m*self.X+self.b).sum(axis=1).reshape(-1,1)
             self.loss_track.append(self.loss())
@@ -66,6 +69,19 @@ class SimpleLR:
         
     def predict(self, X):
         return X.dot(self.m)+self.b#(self.m*X+self.b).sum(axis=1).reshape(-1,1)
+    
+class Logistic(SimpleLR):
+    def __init__(self, alpha=0.01, n_iter=50, random_state = None,clip=5):
+        super().__init__(alpha, n_iter, random_state, clip)
+    
+    def fit(self,X,y,verbose=True):
+        super().fit(X, y,verbose)
+        
+    def predict(self, X):
+        y_pred = super().predict(X)
+        p = 1/(1+np.exp(-y_pred))
+        return np.where(p<=0.5,0,1)
+    
     
 # warnings.filterwarnings('ignore')    
 
